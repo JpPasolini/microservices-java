@@ -1,5 +1,7 @@
 package br.edu.atitus.currencyservice.controllers;
 
+import br.edu.atitus.currencyservice.clients.BCBClient;
+import br.edu.atitus.currencyservice.clients.BCBResponse;
 import br.edu.atitus.currencyservice.dtos.CurrencyDTO;
 import br.edu.atitus.currencyservice.entities.CurrencyEntity;
 import br.edu.atitus.currencyservice.repositories.CurrencyRepository;
@@ -21,9 +23,11 @@ public class CurrencyController {
     private int sleep;
 
     private final CurrencyRepository repository;
+    private final BCBClient bcbClient;
 
-    public CurrencyController(CurrencyRepository repository) {
+    public CurrencyController(CurrencyRepository repository, BCBClient bcbClient) {
         this.repository = repository;
+        this.bcbClient = bcbClient;
     }
 
     @GetMapping("/convert")
@@ -47,7 +51,21 @@ public class CurrencyController {
                 environment);
 
         return ResponseEntity.ok(dto);
-        //return ResponseEntity.badRequest().body(dto);
-        //return ResponseEntity.internalServerError().body(dto);
+    }
+
+    @GetMapping("/bcb")
+    public ResponseEntity<?> getCotacaoBCB(
+            @RequestParam String moeda) {
+
+        BCBResponse response = bcbClient.getCotacao(
+                "'" + moeda.toUpperCase() + "'",
+                "'05-12-2025'",
+                "json");
+
+        if (response == null || response.getValue() == null || response.getValue().isEmpty()) {
+            return ResponseEntity.ok("Fallback: cotação não disponível");
+        }
+
+        return ResponseEntity.ok(response.getValue());
     }
 }
